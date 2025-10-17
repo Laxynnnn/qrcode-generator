@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QR Code Generator</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      background-color: #f4f4f4;
+      flex-direction: column;
+    }
+    .container {
+      background-color: #fff;
+      padding: 2em;
+      border-radius: 8px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      text-align: center;
+      max-width: 400px;
+      width: 100%;
+    }
+    input, select {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 15px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+    }
+    button {
+      padding: 10px 20px;
+      background-color: #007BFF;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      display: block;
+      margin: 10px auto;
+    }
+    #qrcode-container {
+      margin-top: 20px;
+      position: relative;
+      display: inline-block;
+    }
+    #qrcode-container img.logo {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 50px;
+      height: 50px;
+      transform: translate(-50%, -50%);
+      border-radius: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>QR Code Generator</h1>
+    <input type="text" id="userInput" placeholder="Masukkan URL atau teks di sini...">
+
+    <!-- Dropdown Template Cepat -->
+    <label for="templatesSelect">Pilih template cepat:</label>
+    <select id="templatesSelect">
+      <option value="">-- Pilih --</option>
+      <option value="wa">WhatsApp</option>
+      <option value="ig">Instagram</option>
+      <option value="maps">Google Maps</option>
+      <option value="wifi">WiFi</option>
+      <option value="yt">YouTube</option>
+      <option value="tt">TikTok</option>
+      <option value="tg">Telegram</option>
+      <option value="spotify">Spotify</option>
+      <option value="fb">Facebook</option>
+      <option value="tw">Twitter</option>
+      <option value="email">Email</option>
+      <option value="sms">SMS</option>
+      <option value="call">Telepon</option>
+      <option value="linkedin">Linkedin</option>
+      <option value="github">Github</option>
+    </select>
+
+    <!-- Pilihan warna -->
+    <label for="colorInput">Pilih warna QR Code:</label>
+    <input type="color" id="colorInput" value="#000000">
+
+    <!-- Upload logo -->
+    <label for="logoInput">Tambahkan logo (opsional):</label>
+    <input type="file" id="logoInput" accept="image/*">
+
+    <button id="generateBtn">Buat QR Code</button>
+    <div id="qrcode-container"></div>
+    <button id="downloadBtn" style="display: none;">Unduh QR Code</button>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+  <script>
+document.addEventListener('DOMContentLoaded', () => {
+  const userInput = document.getElementById('userInput');
+  const generateBtn = document.getElementById('generateBtn');
+  const qrcodeContainer = document.getElementById('qrcode-container');
+  const downloadBtn = document.getElementById('downloadBtn');
+  const templatesSelect = document.getElementById('templatesSelect');
+  const colorInput = document.getElementById("colorInput");
+
+  templatesSelect.addEventListener ('change', () => {
+    let value = "";
+ switch (templatesSelect.value) {
+          case "wa": value = "https://wa.me/6281234567890"; break;
+          case "ig": value = "https://instagram.com/username"; break;
+          case "maps": value = "https://maps.google.com/?q=Alamat+Anda"; break;
+          case "wifi": value = "WIFI:T:WPA;S:NamaWiFi;P:PasswordWiFi;;"; break;
+          case "yt": value = "https://youtube.com/@username"; break;
+          case "tt": value = "https://tiktok.com/@username"; break;
+          case "tg": value = "https://t.me/username"; break;
+          case "spotify": value = "https://open.spotify.com/user/username"; break;
+          case "fb": value = "https://facebook.com/username"; break;
+          case "tw": value = "https://twitter.com/username"; break;
+          case "email": value = "mailto:example@mail.com"; break;
+          case "sms": value = "sms:+6281234567890?body=Halo"; break;
+          case "call": value = "tel:+6281234567890"; break;
+          case "linkedin": value = "https://linkedin.com/in/username"; break;
+          case "github": value = "https://github.com/username"; break;
+        }
+      userInput.value = value;
+      });
+
+  generateBtn.addEventListener('click', async () => {
+    const data = userInput.value.trim();
+
+    if (data) {
+      qrcodeContainer.innerHTML = '';
+
+      try {
+        // Kirim request ke backend
+        const response = await fetch('/.netlify/functions/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            text: userInput.value,
+            template: templatesSelect.value,
+            color: colorInput.value
+          })
+        });
+
+        const result = await response.json();
+
+        if (result.qrCode) {
+          const img = document.createElement('img');
+          img.src = result.qrCode;
+          img.alt = "QR Code";
+          qrcodeContainer.appendChild(img);
+
+          downloadBtn.style.display = 'block';
+
+          downloadBtn.onclick = () => {
+            const link = document.createElement('a');
+            link.href = result.qrCode;
+            link.download = 'qrcode.png';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+          };
+        } else {
+          alert("Gagal membuat QR Code");
+        }
+      } catch (err) {
+        alert("Terjadi error: " + err.message);
+      }
+    } else {
+      alert("Harap masukkan URL atau teks.");
+    }
+  });
+});
+  </script>
+</body>
+</html>
