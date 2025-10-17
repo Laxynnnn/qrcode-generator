@@ -1,11 +1,11 @@
 [build]
-  # Direktori ini harus disetel ke tempat kode front-end Anda (root folder)
-  publish = "frontend/" 
+  # Publikasikan file dari root folder (tempat index.html berada)
+  publish = "./" 
 
 [functions]
-  # Direktori tempat Netlify akan menemukan fungsi dan package.json
-  directory = "frontend/netlify/functions"
+  # Fungsi ada di folder netlify/functions (relatif dari root)
+  directory = "netlify/functions"
 
-[build.environment]
-  # Ini adalah perintah yang memaksa Netlify untuk menginstal dependensi di folder functions
-  NPM_FLAGS = "--prefix frontend/netlify/functions"
+# Tambahkan plugin untuk instalasi dependency
+[[plugins]]
+  package = "@netlify/plugin-functions-install-core"
