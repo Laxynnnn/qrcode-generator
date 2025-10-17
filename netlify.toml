@@ -1,0 +1,11 @@
+[build]
+  # Direktori tempat file front-end Anda berada (index.html)
+  publish = "frontend/" 
+
+[functions]
+  # Direktori tempat Netlify akan menemukan fungsi Anda
+  directory = "frontend/netlify/functions"
+
+# Tambahkan bagian plugins ini untuk memaksa instalasi dependency fungsi
+[[plugins]]
+  package = "@netlify/plugin-functions-install-core"
