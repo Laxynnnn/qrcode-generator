@@ -6,19 +6,16 @@ const QRCode = require('qrcode');
 // Variabel MONGO_URI akan diisi dari pengaturan Environment Variable di Netlify
 const MONGO_URI = process.env.MONGO_URI;
 
-// ====== Mongoose Schema (ditempatkan di sini) ======
-// Skema harus didefinisikan di sini karena ini adalah file backend satu-satunya
-const qrSchema = new mongoose.Schema({
-  text: String,
-  template: String,
-  color: String,
-  qrCode: String,
-  generatedAt: { type: Date, default: Date.now }
-});
-
 // Gunakan nama model yang sama untuk menghindari konflik
 // Anda mungkin perlu menambahkan { overwriteModels: true } jika Netlify crash, tapi coba tanpa itu dulu
-const QrModel = mongoose.model("History", qrSchema);
+const QrModel = mongoose.model.History  ||
+mongoose.model("History", new mongoose.Schema({
+    text: String,
+    template: String,
+    color: String,
+    qrCode: String,
+    generatedAt: { type: Date, default: Date.now }
+}));
 
 // Fungsi utama yang dipanggil oleh Netlify
 exports.handler = async (event, context) => {
