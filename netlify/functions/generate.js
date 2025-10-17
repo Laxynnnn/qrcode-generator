@@ -18,13 +18,45 @@ const qrSchema = new mongoose.Schema({
 // Buat model (cek dulu apakah sudah ada untuk hindari error)
 const QrModel = mongoose.models.History || mongoose.model("History", qrSchema);
 
+// Koneksi ke MongoDB (di luar handler untuk reuse connection)
+let cachedDb = null;
+
+async function connectToDatabase() {
+  if (cachedDb && mongoose.connection.readyState === 1) {
+    console.log('Using cached database connection');
+    return cachedDb;
+  }
+
+  console.log('Creating new database connection');
+  
+  try {
+    await mongoose.connect(MONGO_URI, {
+      serverSelectionTimeoutMS: 5000, // Timeout setelah 5 detik
+      socketTimeoutMS: 45000,
+    });
+    
+    cachedDb = mongoose.connection;
+    console.log('MongoDB connected successfully');
+    return cachedDb;
+  } catch (error) {
+    console.error('MongoDB connection error:', error);
+    throw error;
+  }
+}
+
 // Handler function untuk Netlify
 exports.handler = async (event, context) => {
+  // Penting untuk serverless functions
+  context.callbackWaitsForEmptyEventLoop = false;
+
   // Only accept POST requests
   if (event.httpMethod !== 'POST') {
     return {
       statusCode: 405,
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*'
+      },
       body: JSON.stringify({ success: false, message: 'Method Not Allowed' })
     };
   }
@@ -40,20 +72,16 @@ exports.handler = async (event, context) => {
     if (!text) {
       return {
         statusCode: 400,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*'
+        },
         body: JSON.stringify({ success: false, message: 'Text is required' })
       };
     }
 
-    // Koneksi ke MongoDB (hanya jika belum connected)
-    if (mongoose.connection.readyState !== 1) {
-      console.log('Connecting to MongoDB...');
-      await mongoose.connect(MONGO_URI, {
-        useNewUrlParser: true,
-        useUnifiedTopology: true,
-      });
-      console.log('MongoDB connected');
-    }
+    // Koneksi ke MongoDB
+    await connectToDatabase();
 
     // Generate QR Code (base64)
     const qrCode = await QRCode.toDataURL(text, {
@@ -81,7 +109,10 @@ exports.handler = async (event, context) => {
     // Return response
     return {
       statusCode: 200,
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*'
+      },
       body: JSON.stringify({ success: true, qrCode: qrCode })
     };
 
@@ -89,7 +120,10 @@ exports.handler = async (event, context) => {
     console.error("Error generating QR:", err);
     return {
       statusCode: 500,
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*'
+      },
       body: JSON.stringify({ 
         success: false, 
         message: 'Failed to generate QR Code: ${err.message}' 
